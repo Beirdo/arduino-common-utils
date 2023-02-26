@@ -4,47 +4,53 @@
 #include <Arduino.h>
 #include <stdlib.h>
 #include <Wire.h>
+#include <Beirdo-Utilities.h>
+#include <canbus_ids.h>
+#ifndef DISABLE_LOGGING
+#include <ArduinoLog.h>
+#endif
 
 #define SENSOR_READING_COUNT  8
+#define UNUSED_VALUE  (int32_t)(0x80000000)
 
 
-template <typename T>
 class Sensor {
   public:
-    Sensor(int id, T unused_val, T feedback_thresh, bool internal = false) :
-      _id(id), _internal(internal), _unused(unused_val), _feedback_thresh(feedback_thresh), _value(unused_val),
-      _prev_value(unused_val), _last_updated(0), _valid(false) {};
+    Sensor(int id, int data_bytes, int32_t feedback_thresh, bool internal = false) :
+      _id(id), _internal(internal), _data_bytes(data_bytes), _feedback_thresh(feedback_thresh), _value(UNUSED_VALUE),
+      _prev_value(UNUSED_VALUE), _last_updated(0), _valid(false), _name(get_canbus_id_name(id)) {};
 
     void init(void) { _valid = true; };
     void update(void) {};
 
-    void set_value(T value) 
+    void set_value(int32_t value) 
     { 
       _value = value; 
       _last_updated = millis();
       feedback();
     };
 
-    T get_value(void) { return _value; };
+    int32_t get_value(void) { return _value; };
     int last_updated(void)  { return _last_updated; };
 
   protected:
     int _id;
     bool _internal;
-    T _unused;
-    T _feedback_thresh;
-    T _value;
-    T _prev_value;
+    int _data_bytes;
+    int32_t _feedback_thresh;
+    int32_t _value;
+    int32_t _prev_value;
     int _last_updated;
     bool _valid;
+    const char *_name;
 
     bool check_threshold(void) 
     {
-      if (_value == _unused) {
+      if (_value == UNUSED_VALUE) {
         return false;
       }
 
-      bool retval = (_prev_value == _unused || abs((int)_prev_value - (int)_value) > _feedback_thresh);
+      bool retval = (_prev_value == UNUSED_VALUE || abs((int)_prev_value - (int)_value) > _feedback_thresh);
       _prev_value = _value;
       return retval;
     }
@@ -59,15 +65,14 @@ class Sensor {
 };
 
 
-template <typename T>
-class LocalSensor : public Sensor<T> {
+class LocalSensor : public Sensor {
   public:
-    LocalSensor(int id, T unused_val, T feedback_thresh, int bits, uint8_t i2c_address = 0x00, int mult = 0, int div_ = 0) :
-      Sensor<T>(id, unused_val, feedback_thresh, true), 
+    LocalSensor(int id, int data_bytes, int32_t feedback_thresh, int bits, uint8_t i2c_address = 0x00, int mult = 0, int div_ = 0) :
+      Sensor(id, data_bytes, feedback_thresh, true), 
       _bits(bits), _mult(mult), _div(div_), _tail(0), _i2c_address(i2c_address)
     {
       for (int i = 0; i < SENSOR_READING_COUNT; i++) {
-        _readings[i] = unused_val;
+        _readings[i] = UNUSED_VALUE;
       }
 
       if (_i2c_address == 0xFF) {
@@ -78,18 +83,18 @@ class LocalSensor : public Sensor<T> {
         _connected = i2c_is_connected();
       }
 
-#ifdef ENABLE_LOGGING
+#ifndef DISABLE_LOGGING
       if (_connected) {
-        Log.notice("Found sensor (%s) at I2C %X", capabilities_names[_index], _i2c_address);
+        Log.notice("Found sensor (%s) at I2C %X", _name, _i2c_address);
       } else {
-        Log.error("No sensor (%s) at I2C %X", capabilities_names[_index], _i2c_address);
+        Log.error("No sensor (%s) at I2C %X", _name, _i2c_address);
       }
 #endif
     };
 
-    void add_value(T value)
+    void add_value(int32_t value)
     {
-      if (value == this->_unused) {
+      if (value == UNUSED_VALUE) {
         return;
       }
 
@@ -97,7 +102,7 @@ class LocalSensor : public Sensor<T> {
       _tail = (_tail + 1) % SENSOR_READING_COUNT;
     };
 
-    T filter(void)
+    int32_t filter(void)
     {
       int32_t accumulator = 0;
       int count = 0;
@@ -105,17 +110,16 @@ class LocalSensor : public Sensor<T> {
       int min_index = -1;
       int32_t max_reading = (int32_t)0x80000000;
       int max_index = -1;
-      T value;
-      T unused = this->_unused;
+      int32_t value;
 
       for (int i = 0; i < SENSOR_READING_COUNT; i++) {
         value = _readings[i];
-        if (value != unused && value < min_reading) {
+        if (value != UNUSED_VALUE && value < min_reading) {
           min_reading = value;
           min_index = i;
         }
 
-        if (value != unused && value > max_reading) {
+        if (value != UNUSED_VALUE && value > max_reading) {
           max_reading = value;
           max_index = i;
         }
@@ -123,7 +127,7 @@ class LocalSensor : public Sensor<T> {
 
       for (int i = 0; i < SENSOR_READING_COUNT; i++) {
         value = _readings[i];
-        if (value == unused || i == min_index || i == max_index) {
+        if (value == UNUSED_VALUE || i == min_index || i == max_index) {
           continue;
         }
 
@@ -132,10 +136,10 @@ class LocalSensor : public Sensor<T> {
       }
 
       if (!count) {
-        return unused;
+        return UNUSED_VALUE;
       }
 
-      return (T)(accumulator / count);
+      return (int32_t)(accumulator / count);
     };
 
     void update(void)
@@ -144,10 +148,9 @@ class LocalSensor : public Sensor<T> {
         return;
       }
 
-      T raw_value = get_raw_value();
-      if (raw_value != this->_unused) {
-        T scaled_value = convert(raw_value);
-        add_value(scaled_value);
+      int32_t raw_value = get_raw_value();
+      if (raw_value != UNUSED_VALUE) {
+        add_value(convert(raw_value));
       }
 
       set_value(filter());
@@ -157,17 +160,17 @@ class LocalSensor : public Sensor<T> {
     int _bits;
     int _mult;
     int _div;
-    T _readings[SENSOR_READING_COUNT];
+    int32_t _readings[SENSOR_READING_COUNT];
     int _tail;
     uint8_t _i2c_address;
     bool _connected;
 
-    virtual T get_raw_value(void) = 0;
+    virtual int32_t get_raw_value(void) = 0;
     void _do_feedback(void);
 
-    T convert(T reading)
+    int32_t convert(int32_t reading)
     {
-      T value = 0;
+      int32_t value = 0;
 
       if (_div != 0) {
         value = reading;
@@ -220,34 +223,44 @@ class LocalSensor : public Sensor<T> {
 };
 
 
-template <typename T>
-class RemoteSensor : public Sensor<T> {
+class RemoteSensor : public Sensor {
   public:
-    RemoteSensor(int id, T unused_val, T feedback_thresh) : 
-      Sensor<T>(id, unused_val, feedback_thresh, false) {};
+    RemoteSensor(int id, int data_bytes, int32_t feedback_thresh) : 
+      Sensor(id, data_bytes, feedback_thresh, false) {};
 
     void request(void);
-    T convert_from_packet(uint8_t *buf, int len)
+    int32_t convert_from_packet(uint8_t *buf, int len)
     {
-      T value;
+      int32_t value = 0;
  
-      len = min(len, sizeof(value));
-      if (len < sizeof(value)) {
-        return this->_unused;
+      len = min(len, _data_bytes);
+      if (len < _data_bytes || _data_bytes > 4) {
+        return UNUSED_VALUE;
       }
 
-      memcpy((char *)&value, buf, len);
+      memcpy((uint8_t *)&value, buf, len);
+
+      // network data is big-endian
+      if (isLittleEndian()) {
+        value = __bswap32(value);
+      }
+
       return value;
     };
 
-    int convert_to_packet(T value, uint8_t *buf, int len)
+    int convert_to_packet(int32_t value, uint8_t *buf, int len)
     {
-      len = min(len, sizeof(value));
-      if (len < sizeof(value)) {
+      len = min(len, _data_bytes);
+      if (len < _data_bytes || _data_bytes > 4) {
         return 0;
       }
 
-      memcpy(buf, (char *)&value, len);
+      // network data is big-endian
+      if (isLittleEndian()) {
+        value = __bswap32(value);
+      }
+
+      memcpy(buf, (uint8_t *)&value, len);
       return len;
     }
 

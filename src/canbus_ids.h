@@ -26,4 +26,9 @@ typedef enum {
 } canbus_id_t;
 
 
+#define NAME_HELPER(x)    #x
+#define CANBUS_ID_NAME(x) NAME_HELPER(x)
+
+const char *get_canbus_id_name(int id);
+
 #endif
