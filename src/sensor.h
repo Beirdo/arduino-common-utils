@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdlib.h>
+#include <Wire.h>
 
 #define SENSOR_READING_COUNT  8
 
@@ -12,7 +13,10 @@ class Sensor {
   public:
     Sensor(int id, T unused_val, T feedback_thresh, bool internal = false) :
       _id(id), _internal(internal), _unused(unused_val), _feedback_thresh(feedback_thresh), _value(unused_val),
-      _prev_value(unused_val), _last_updated(0) {};
+      _prev_value(unused_val), _last_updated(0), _valid(false) {};
+
+    void init(void) { _valid = true; };
+    void update(void) {};
 
     void set_value(T value) 
     { 
@@ -32,6 +36,7 @@ class Sensor {
     T _value;
     T _prev_value;
     int _last_updated;
+    bool _valid;
 
     bool check_threshold(void) 
     {
@@ -39,7 +44,7 @@ class Sensor {
         return false;
       }
 
-      bool retval = (_prev_value == _unused || abs((int)_prev_value - (int)_value) > _feedback_threshold);
+      bool retval = (_prev_value == _unused || abs((int)_prev_value - (int)_value) > _feedback_thresh);
       _prev_value = _value;
       return retval;
     }
@@ -55,14 +60,36 @@ class Sensor {
 
 
 template <typename T>
-class LocalSensor : public Sensor {
+class LocalSensor : public Sensor<T> {
   public:
-    LocalSensor(int id, T unused_val, T feedback_thresh, int bits, int mult, int div_) :
-      Sensor(id, unused_val, feedback_thresh, true), _bits(bits), _mult(mult), _div(div_), _tail(0) {};
+    LocalSensor(int id, T unused_val, T feedback_thresh, int bits, uint8_t i2c_address = 0x00, int mult = 0, int div_ = 0) :
+      Sensor<T>(id, unused_val, feedback_thresh, true), 
+      _bits(bits), _mult(mult), _div(div_), _tail(0), _i2c_address(i2c_address)
+    {
+      for (int i = 0; i < SENSOR_READING_COUNT; i++) {
+        _readings[i] = unused_val;
+      }
+
+      if (_i2c_address == 0xFF) {
+        _connected = false;
+      } else if (_i2c_address == 0x00) {
+        _connected = true;
+      } else {
+        _connected = i2c_is_connected();
+      }
+
+#ifdef ENABLE_LOGGING
+      if (_connected) {
+        Log.notice("Found sensor (%s) at I2C %X", capabilities_names[_index], _i2c_address);
+      } else {
+        Log.error("No sensor (%s) at I2C %X", capabilities_names[_index], _i2c_address);
+      }
+#endif
+    };
 
     void add_value(T value)
     {
-      if (value == _unused) {
+      if (value == this->_unused) {
         return;
       }
 
@@ -79,15 +106,16 @@ class LocalSensor : public Sensor {
       int32_t max_reading = (int32_t)0x80000000;
       int max_index = -1;
       T value;
+      T unused = this->_unused;
 
       for (int i = 0; i < SENSOR_READING_COUNT; i++) {
         value = _readings[i];
-        if (value != _unused && value < min_reading) {
+        if (value != unused && value < min_reading) {
           min_reading = value;
           min_index = i;
         }
 
-        if (value != _unused && value > max_reading) {
+        if (value != unused && value > max_reading) {
           max_reading = value;
           max_index = i;
         }
@@ -95,7 +123,7 @@ class LocalSensor : public Sensor {
 
       for (int i = 0; i < SENSOR_READING_COUNT; i++) {
         value = _readings[i];
-        if (value == _unused || i == min_index || i == max_index) {
+        if (value == unused || i == min_index || i == max_index) {
           continue;
         }
 
@@ -104,7 +132,7 @@ class LocalSensor : public Sensor {
       }
 
       if (!count) {
-        return _unused;
+        return unused;
       }
 
       return (T)(accumulator / count);
@@ -117,13 +145,25 @@ class LocalSensor : public Sensor {
       }
 
       T raw_value = get_raw_value();
-      if (raw_value != _unused) {
+      if (raw_value != this->_unused) {
         T scaled_value = convert(raw_value);
         add_value(scaled_value);
       }
 
       set_value(filter());
     };
+
+  protected:
+    int _bits;
+    int _mult;
+    int _div;
+    T _readings[SENSOR_READING_COUNT];
+    int _tail;
+    uint8_t _i2c_address;
+    bool _connected;
+
+    virtual T get_raw_value(void) = 0;
+    void _do_feedback(void);
 
     T convert(T reading)
     {
@@ -138,24 +178,53 @@ class LocalSensor : public Sensor {
       return value;
     };
 
-    virtual T get_raw_value(void) = 0;
 
-  protected:
-    int _bits;
-    int _mult;
-    int _div;
-    T _readings[SENSOR_READING_COUNT];
-    int _tail;0
-    bool _connected;
+    void i2c_write_register(uint8_t regnum, uint8_t value, bool skip_byte = false)
+    {
+      Wire.beginTransmission(_i2c_address);
+      Wire.write(regnum);
+      if (!skip_byte) {
+        Wire.write(value);
+      }
+      Wire.endTransmission();
+    };
 
-    void _do_feedback(void);
+    void i2c_write_register_word(uint8_t regnum, uint16_t value)
+    {
+      Wire.beginTransmission(_i2c_address);
+      Wire.write(regnum);
+      Wire.write((value >> 8) & 0xFF);
+      Wire.write(value & 0xFF);
+      Wire.endTransmission();
+    };
+
+    void i2c_read_data(uint8_t regnum, uint8_t *buf, uint8_t count, bool skip_regnum = false)
+    {
+      Wire.beginTransmission(_i2c_address);
+      if (!skip_regnum) {
+        Wire.write(regnum);
+        Wire.endTransmission(false);
+      }
+      Wire.requestFrom(_i2c_address, count);
+
+      for (int i = 0; i < count && Wire.available(); i++) {
+        *(buf++) = Wire.read();
+      }
+    };
+
+    bool i2c_is_connected(void)
+    {
+      Wire.beginTransmission(_i2c_address);
+      return (Wire.endTransmission() == 0);
+    };
 };
 
 
 template <typename T>
-class RemoteSensor : public Sensor {
+class RemoteSensor : public Sensor<T> {
   public:
-    RemoteSensor(int id, T unused_val, T feedback_thresh) : Sensor(id, unused_val, feedback_thresh, false) {};
+    RemoteSensor(int id, T unused_val, T feedback_thresh) : 
+      Sensor<T>(id, unused_val, feedback_thresh, false) {};
 
     void request(void);
     T convert_from_packet(uint8_t *buf, int len)
@@ -164,7 +233,7 @@ class RemoteSensor : public Sensor {
  
       len = min(len, sizeof(value));
       if (len < sizeof(value)) {
-        return _unused;
+        return this->_unused;
       }
 
       memcpy((char *)&value, buf, len);
