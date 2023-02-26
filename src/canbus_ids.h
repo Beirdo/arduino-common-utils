@@ -7,12 +7,12 @@ typedef enum {
   CANBUS_ID_WBUS,
   CANBUS_ID_LINBUS_BRIDGE,
 
-// Onboard Sensors
+  // Onboard Sensors
   CANBUS_ID_INTERNAL_TEMP = 128,
   CANBUS_ID_FLAME_DETECTOR,
   CANBUS_ID_VSYS_VOLTAGE,
 
-// Sensors formerly on I2C
+  // Sensors formerly on I2C
   CANBUS_ID_EXTERNAL_TEMP = 256,
   CANBUS_ID_BATTERY_VOLTAGE,
   CANBUS_ID_COOLANT_TEMP_WEBASTO,
@@ -21,8 +21,8 @@ typedef enum {
   CANBUS_ID_EMERGENCY_STOP,
   CANBUS_ID_START_RUN,
 
-// Sensors on LINBus
-  CANBUS_ID_BLAH = 512,
+  // Sensors on LINBus
+  CANBUS_ID_VEHICLE_FAN = 512,
 } canbus_id_t;
 
 
