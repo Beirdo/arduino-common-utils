@@ -24,10 +24,12 @@ inline T clamp(T value, T minval, T maxval)
 }
 
 template <typename T>
-inline T map(T x, T in_min, T in_max, T out_min, T out_max)
+inline T map(T x, T in_min, T in_max, T out_min, T out_max, bool do_clamp = true)
 {
   // the perfect map fonction, with constraining and float handling
-  x = clamp<T>(x, in_min, in_max);
+  if (do_clamp) {
+    x = clamp<T>(x, in_min, in_max);
+  }
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
