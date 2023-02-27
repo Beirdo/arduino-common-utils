@@ -18,6 +18,7 @@ typedef struct {
   int id;
   uint8_t buf[CANBUS_BUF_SIZE];
   int len;
+  uint8_t type;
 } canbus_buf_t;
 
 canbus_buf_t canbus_tx_bufs[CANBUS_BUF_COUNT];
@@ -56,7 +57,7 @@ bool CANBus::begin(SPIClass *spi, int ss, int interrupt)
   return _initialized;
 }
 
-int CANBus::write(int id, const char *buf, int len)
+int CANBus::write(int id, const char *buf, int len, uint8_t type)
 {
   if (!_initialized) {
     return 0;    
@@ -68,6 +69,7 @@ int CANBus::write(int id, const char *buf, int len)
   }
 
   memcpy(msg.data, buf, len);
+  msg.type = static_cast<CANFDMessage::Type>(type);
   msg.len = len;
   msg.pad();
   msg.id = id;
@@ -79,7 +81,7 @@ int CANBus::write(int id, const char *buf, int len)
   return len;
 }
 
-int CANBus::read(int *id, const char *buf, int len)
+int CANBus::read(int *id, const char *buf, int len, uint8_t *type)
 {
   if (!_initialized) {
     return 0;
@@ -98,6 +100,10 @@ int CANBus::read(int *id, const char *buf, int len)
 
   if (id) {
     *id = msg.id;
+  }
+
+  if (type) {
+    *type = msg.type;
   }
 
   return msg.len;
@@ -132,9 +138,10 @@ void update_canbus_tx(void)
     const uint8_t *buf = (const uint8_t *)item->buf;
     int len = item->len;
     int id = item->id;
+    uint8_t type = item->type;
 
-    int retlen = canbus.write(id, (const char *)buf, len);
-    Log.notice("CANBus ID %X: Sent %d bytes of %d", retlen, len);
+    int retlen = canbus.write(id, (const char *)buf, len, type);
+    Log.notice("CANBus ID %X, type %d: Sent %d bytes of %d", id, type, retlen, len);
 
 #ifdef HEXDUMP_TX
     hexdump(buf, retlen, 16);
@@ -146,23 +153,24 @@ void update_canbus_rx(void)
 {
   while (canbus.available()) {
     int id;
-    int len = canbus.read(&id, (const char *)canbus_rx_buf, CANBUS_BUF_SIZE);
+    uint8_t type;
+    int len = canbus.read(&id, (const char *)canbus_rx_buf, CANBUS_BUF_SIZE, &type);
 
     if (!len) {
       continue;
     }
 
-    Log.notice("CANBus ID %X: Received %d bytes", id, len);
+    Log.notice("CANBus ID %X, type %d: Received %d bytes", id, type, len);
 
 #ifdef HEXDUMP_TX
     hexdump(canbus_rx_buf, len, 16);
 #endif
 
-    canbus_dispatch(id, canbus_rx_buf, len);
+    canbus_dispatch(id, canbus_rx_buf, len, type);
   }
 }
 
-void canbus_send(int id, uint8_t *buf, int len)
+void canbus_send(int id, uint8_t *buf, int len, uint8_t type)
 {
   CoreMutex m(&canbus_mutex);
   
@@ -177,6 +185,7 @@ void canbus_send(int id, uint8_t *buf, int len)
   canbus_buf_t *item = &canbus_tx_bufs[index];
   item->id = id;
   item->len = len;
+  item->type = type;
   memcpy(item->buf, buf, len);
 
   canbus_tx_q.push(&index);
@@ -193,5 +202,5 @@ void canbus_output_value(int id, int32_t value, int data_bytes)
 
 void canbus_request_value(int id)
 {
-  canbus_send(id, 0, 0);
+  canbus_send(id, 0, 0, CAN_REMOTE);
 }

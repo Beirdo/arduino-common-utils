@@ -1,6 +1,12 @@
 #ifndef __canbus_ids_h_
 #define __canbus_ids_h_
 
+#include <Beirdo-Utilities.h>
+
+// CANBus regular IDs are 11 bits, extended are 29 bits
+// we will use 11 bits and use the MSB as a "write" modifier to send
+// config or commands to the remote sensor while leaving the normal 
+// IDs for the sensors to broadcast reading updates.
 
 typedef enum {
   CANBUS_ID_MAINBOARD = 1,
@@ -25,6 +31,7 @@ typedef enum {
   CANBUS_ID_VEHICLE_FAN = 512,
 } canbus_id_t;
 
+#define CANBUS_ID_WRITE_MODIFIER  BIT(10)
 
 #define NAME_HELPER(x)    #x
 #define CANBUS_ID_NAME(x) NAME_HELPER(x)
