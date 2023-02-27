@@ -9,6 +9,7 @@
 #ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>
 #endif
+#include <canbus.h>
 
 #define SENSOR_READING_COUNT  8
 #define UNUSED_VALUE  (int32_t)(0x80000000)
@@ -57,11 +58,11 @@ class Sensor {
 
     void feedback(void) {
       if (check_threshold()) {
-        _do_feedback();
+        do_feedback();
       }
     }
 
-    virtual void _do_feedback(void) = 0;
+    virtual void do_feedback(void) = 0;
 };
 
 
@@ -165,8 +166,8 @@ class LocalSensor : public Sensor {
     uint8_t _i2c_address;
     bool _connected;
 
-    virtual int32_t get_raw_value(void) = 0;
-    void _do_feedback(void);
+    int32_t get_raw_value(void) { return UNUSED_VALUE; };
+    void do_feedback(void) {};
 
     int32_t convert(int32_t reading)
     {
@@ -228,7 +229,6 @@ class RemoteSensor : public Sensor {
     RemoteSensor(int id, int data_bytes, int32_t feedback_thresh) : 
       Sensor(id, data_bytes, feedback_thresh, false) {};
 
-    void request(void);
     int32_t convert_from_packet(uint8_t *buf, int len)
     {
       int32_t value = 0;
@@ -264,8 +264,38 @@ class RemoteSensor : public Sensor {
       return len;
     }
 
+    virtual void request(void) = 0;
+
   protected:
-    void _do_feedback(void);
+    virtual void do_feedback(void) = 0;
 };
+
+
+class RemoteCANBusSensor : public RemoteSensor {
+  public:
+    RemoteCANBusSensor(int id, int data_bytes, int32_t feedback_thresh) : 
+      RemoteSensor(id, data_bytes, feedback_thresh) {};
+
+    void request(void)
+    {
+      canbus_request_value(_id);
+    }
+
+  protected:
+    void do_feedback(void);
+};
+
+
+class RemoteLINBusSensor : public RemoteSensor {
+  public:
+    RemoteLINBusSensor(int id, int data_bytes, int32_t feedback_thresh) : 
+      RemoteSensor(id, data_bytes, feedback_thresh) {};
+
+    void request(void);
+
+  protected:
+    void do_feedback(void);
+};
+
 
 #endif
