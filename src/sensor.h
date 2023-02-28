@@ -3,8 +3,10 @@
 
 #include <Arduino.h>
 #include <stdlib.h>
-#include <Wire.h>
 #include <Beirdo-Utilities.h>
+#ifdef USE_I2C
+#include <Wire.h>
+#endif
 #include <canbus_ids.h>
 #ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>
@@ -183,6 +185,7 @@ class LocalSensor : public Sensor {
     };
 
 
+#ifdef USE_I2C
     void i2c_write_register(uint8_t regnum, uint8_t value, bool skip_byte = false)
     {
       Wire.beginTransmission(_i2c_address);
@@ -221,6 +224,12 @@ class LocalSensor : public Sensor {
       Wire.beginTransmission(_i2c_address);
       return (Wire.endTransmission() == 0);
     };
+#else
+    bool i2c_is_connected(void)
+    {
+      return false;
+    }
+#endif
 };
 
 

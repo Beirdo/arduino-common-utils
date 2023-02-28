@@ -39,12 +39,12 @@ bool CANBusController_MCP2517FD::begin(void)
 int CANBusController_MCP2517FD::write(int id, const char *buf, int len, uint8_t type)
 {
   if (!_initialized) {
-    return 0;    
+    return -1;    
   }
 
   CANFDMessage msg;
   if (len > 64) {
-    return 0;
+    return -1;
   }
 
   memcpy(msg.data, buf, len);
@@ -55,7 +55,7 @@ int CANBusController_MCP2517FD::write(int id, const char *buf, int len, uint8_t 
   msg.ext = false;
 
   if (!_spican->tryToSend(msg)) {
-    return 0;
+    return -1;
   }
   return len;
 }
@@ -63,16 +63,16 @@ int CANBusController_MCP2517FD::write(int id, const char *buf, int len, uint8_t 
 int CANBusController_MCP2517FD::read(int *id, const char *buf, int len, uint8_t *type)
 {
   if (!_initialized) {
-    return 0;
+    return -1;
   }
 
   CANFDMessage msg;
   if (!_spican->receive(msg)) {
-    return 0;
+    return -1;
   }
 
   if (len < msg.len) {
-    return 0;
+    return -1;
   }
 
   memcpy((char *)buf, msg.data, msg.len);

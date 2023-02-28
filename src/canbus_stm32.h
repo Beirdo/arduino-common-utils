@@ -5,6 +5,7 @@
 
 #ifdef STM32F0xx
 
+#include <STM32-CAN.h>
 #include "canbus.h"
 
 class CANBusController_STM32 : public CANBusController {
@@ -17,7 +18,7 @@ class CANBusController_STM32 : public CANBusController {
     bool available(void);
 
   protected:
-    
+    STM32_CAN _can;
 };
 
 void init_canbus_stm32_internal(int enable);
