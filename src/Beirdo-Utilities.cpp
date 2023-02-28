@@ -2,7 +2,11 @@
 #include <ArduinoLog.h>
 
 #ifndef DISABLE_LOGGING
+
+#ifdef USE_MUTEX
 mutex_t log_mutex;
+#endif
+
 HardwareSerial *logSerial;
 
 void sendCoreNum(Print *output, int level);
@@ -10,7 +14,9 @@ void sendCRLF(Print *output, int level);
 
 void setup_logging(int level, HardwareSerial *serial)
 {
+#ifdef USE_MUTEX
   mutex_init(&log_mutex);
+#endif
 
   logSerial = serial;
   if (!logSerial) {
@@ -33,8 +39,16 @@ void sendCoreNum(Print *output, int level)
     return;
   }
 
+#ifdef USE_MUTEX
   mutex_enter_blocking(&log_mutex);
+#endif
+
+#ifdef RASPBERRY_PI_PICO
   int coreNum = get_core_num();
+#else
+  int coreNum = 0;
+#endif
+
   output->printf("C%d: %10d: ", coreNum, millis());
 }
 
@@ -50,7 +64,10 @@ void sendCRLF(Print *output, int level)
 
   output->printf("\n\r");
   output->flush();
+
+#ifdef USE_MUTEX
   mutex_exit(&log_mutex);
+#endif
 }
 
 void hexdump(const void* mem, uint32_t len, uint8_t cols) 

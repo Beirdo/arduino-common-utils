@@ -1,14 +1,13 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
-#include <ACAN2517FD.h>
-#include <pico.h>
-#include <SPI.h>
 #include <stdlib.h>
 #include <cppQueue.h>
 #include <Beirdo-Utilities.h>
 #include <canbus_dispatch.h>
 
 #include "canbus.h"
+#include "canbus_mcp2517fd.h"
+#include "canbus_stm32.h"
 
 CANBus canbus;
 
@@ -23,39 +22,39 @@ typedef struct {
 
 canbus_buf_t canbus_tx_bufs[CANBUS_BUF_COUNT];
 uint8_t canbus_rx_buf[CANBUS_BUF_SIZE];
-ACAN2517FD *can = 0;
 
+#ifdef USE_MUTEX
 mutex_t canbus_mutex;
+#endif
+
 int canbus_head = 0;
 int canbus_tail = 0;
 
 cppQueue canbus_tx_q(sizeof(int), CANBUS_BUF_COUNT, FIFO);
 
 
-bool CANBus::begin(SPIClass *spi, int ss, int interrupt)
+bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable)
 {
-  _spi = spi;
-  if (!_spi) {
-    return false;
+  _initialized = false;
+  _controller = 0;
+
+#ifdef RASPBERRY_PI_PICO
+  if (spi) {
+    _controller = new CANBusController_MCP2517FD(spi, ss, interrupt);
   }
+#endif
 
-  _ss = ss;
-  _interrupt = interrupt;
+#ifdef STM32F0xx
+  _controller = new CANBusController_STM32(enable);
+#endif
 
-  can = new ACAN2517FD(_ss, *_spi, _interrupt);
-  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_20MHz,
-                               1000 * 1000, DataBitRateFactor::x8) ;
-  const uint32_t errorCode = can->begin(settings, [] { can->isr () ; }) ;  
-  if (errorCode) {
-    Log.error("CAN Initialization error code: %X", errorCode);
-    _initialized = false;
-  } else {
-    Log.notice("Initialized CANBus on MCP2517");
-    _initialized = true;
+  if (_controller) {
+    _initialized = _controller->begin();
   }
 
   return _initialized;
 }
+
 
 int CANBus::write(int id, const char *buf, int len, uint8_t type)
 {
@@ -63,22 +62,7 @@ int CANBus::write(int id, const char *buf, int len, uint8_t type)
     return 0;    
   }
 
-  CANFDMessage msg;
-  if (len > 64) {
-    return 0;
-  }
-
-  memcpy(msg.data, buf, len);
-  msg.type = static_cast<CANFDMessage::Type>(type);
-  msg.len = len;
-  msg.pad();
-  msg.id = id;
-  msg.ext = false;
-
-  if (!can->tryToSend(msg)) {
-    return 0;
-  }
-  return len;
+  return _controller->write(id, buf, len, type);
 }
 
 int CANBus::read(int *id, const char *buf, int len, uint8_t *type)
@@ -87,26 +71,7 @@ int CANBus::read(int *id, const char *buf, int len, uint8_t *type)
     return 0;
   }
 
-  CANFDMessage msg;
-  if (!can->receive(msg)) {
-    return 0;
-  }
-
-  if (len < msg.len) {
-    return 0;
-  }
-
-  memcpy((char *)buf, msg.data, msg.len);
-
-  if (id) {
-    *id = msg.id;
-  }
-
-  if (type) {
-    *type = msg.type;
-  }
-
-  return msg.len;
+  return _controller->read(id, buf, len, type);
 }
 
 bool CANBus::available(void)
@@ -115,19 +80,17 @@ bool CANBus::available(void)
     return false;
   }
 
-  return can->available();
+  return _controller->available();
 }
 
-void init_canbus(SPIClass *spi, int ss, int interrupt)
-{
-  mutex_init(&canbus_mutex);
-  canbus.begin(spi, ss, interrupt);  
-}
+
 
 void update_canbus_tx(void) 
 {
   while (!canbus_tx_q.isEmpty()) {
+#ifdef USE_MUTEX
     CoreMutex m(&canbus_mutex);
+#endif
 
     int index;
     canbus_tx_q.pop(&index);
@@ -172,7 +135,9 @@ void update_canbus_rx(void)
 
 void canbus_send(int id, uint8_t *buf, int len, uint8_t type)
 {
+#ifdef USE_MUTEX
   CoreMutex m(&canbus_mutex);
+#endif
   
   if ((canbus_tail + 1) % CANBUS_BUF_COUNT == canbus_head) {
     // We are out of space.  Discard the oldest
