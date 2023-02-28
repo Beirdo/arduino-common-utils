@@ -33,7 +33,7 @@ int canbus_tail = 0;
 cppQueue canbus_tx_q(sizeof(int), CANBUS_BUF_COUNT, FIFO);
 
 
-bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable)
+bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable, void *filters, int filter_count)
 {
   _initialized = false;
   _controller = 0;
@@ -45,7 +45,7 @@ bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable)
 #endif
 
 #ifdef STM32F0xx
-  _controller = new CANBusController_STM32(enable);
+  _controller = new CANBusController_STM32(enable, filters, filter_count);
 #endif
 
   if (_controller) {

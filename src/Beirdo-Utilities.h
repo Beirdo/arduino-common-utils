@@ -15,6 +15,8 @@
 
 #define BIT(x) ((uint32_t)(1 << x))
 
+#define NELEMS(x) (sizeof(x) / sizeof((x)[0]))
+
 #ifndef DISABLE_LOGGING
 void setup_logging(int level, HardwareSerial *serial);
 extern void hexdump(const void* mem, uint32_t len, uint8_t cols);

@@ -12,6 +12,7 @@
 
 bool CANBusController_STM32::begin(void)
 {
+  _can.setFilters(_filters, _filter_count);
   _can.begin(CAN_1000KBPS);
 
   Log.notice("Initialized CANBus on STM32");
@@ -78,12 +79,12 @@ bool CANBusController_STM32::available(void)
 }
 
 
-void init_canbus_stm32_internal(int enable)
+void init_canbus_stm32_internal(int enable, CAN_filter_t *filters, int filter_count)
 {
 #ifdef USE_MUTEX
   mutex_init(&canbus_mutex);
 #endif
-  canbus.begin(0, -1, -1, enable);
+  canbus.begin(0, -1, -1, enable, filters, filter_count);
 }
 
 #endif

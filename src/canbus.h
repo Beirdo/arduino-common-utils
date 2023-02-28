@@ -36,7 +36,7 @@ class CANBus {
   public:
     CANBus() : _controller(0), _initialized(false) {};
 
-    bool begin(SPIClass *spi, int ss, int interrupt, int enable = -1);
+    bool begin(SPIClass *spi, int ss, int interrupt, int enable = -1, void *filters = 0, int filter_count = 0);
     int write(int id, const char *buf, int len, uint8_t type = CANFD_WITH_BIT_RATE_SWITCH);
     int read(int *id, const char *buf, int len, uint8_t *type);
     bool available(void);

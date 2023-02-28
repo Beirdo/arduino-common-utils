@@ -10,7 +10,8 @@
 
 class CANBusController_STM32 : public CANBusController {
   public:
-    CANBusController_STM32(int enable) : CANBusController(enable) {};
+    CANBusController_STM32(int enable, void *filters, int filter_count) :
+      CANBusController(enable), _filters(static_cast<CAN_filter_t *>(filters)), _filter_count(filter_count) {};
 
     bool begin(void);
     int write(int id, const char *buf, int len, uint8_t type = CAN_DATA);
@@ -19,9 +20,11 @@ class CANBusController_STM32 : public CANBusController {
 
   protected:
     STM32_CAN _can;
+    CAN_filter_t *_filters;
+    int _filter_count;
 };
 
-void init_canbus_stm32_internal(int enable);
+void init_canbus_stm32_internal(int enable, CAN_filter_t *filters, int filter_count);
 
 #endif
 
