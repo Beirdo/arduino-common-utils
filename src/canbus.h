@@ -2,11 +2,9 @@
 #define __canbus_h_
 
 #include <Arduino.h>
-#ifdef USE_SPI
+#include <Beirdo-Utilities.h>
+
 #include <SPI.h>
-#else
-  class SPIClass;
-#endif
 #include <canbus_ids.h>
 
 typedef enum {

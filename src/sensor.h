@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <stdlib.h>
 #include <Beirdo-Utilities.h>
+
 #ifdef USE_I2C
 #include <Wire.h>
 #endif
@@ -274,6 +275,7 @@ class RemoteSensor : public Sensor {
     }
 
     virtual void request(void) = 0;
+    virtual void send_control_value(uint32_t value, int bytes, int8_t register_index) = 0;
 
   protected:
     virtual void do_feedback(void) = 0;
@@ -290,6 +292,12 @@ class RemoteCANBusSensor : public RemoteSensor {
       canbus_request_value(_id);
     }
 
+    void send_control_value(uint32_t value, int bytes, int8_t register_index = -1)
+    {
+      (void)register_index;
+      canbus_output_value(_id | CANBUS_ID_WRITE_MODIFIER, value, bytes);
+    }
+
   protected:
     void do_feedback(void);
 };
@@ -297,13 +305,50 @@ class RemoteCANBusSensor : public RemoteSensor {
 
 class RemoteLINBusSensor : public RemoteSensor {
   public:
-    RemoteLINBusSensor(int id, int data_bytes, int32_t feedback_thresh) : 
-      RemoteSensor(id, data_bytes, feedback_thresh) {};
+    RemoteLINBusSensor(int id, int data_bytes, int32_t feedback_thresh, int8_t control_reg = -1) : 
+      RemoteSensor(id, data_bytes, feedback_thresh), _control_reg(control_reg) {};
 
-    void request(void);
+    void request(void)
+    {
+      canbus_request_value(_id);
+    }
+
+    void send_control_value(uint32_t value, int bytes, int8_t register_index = -1)
+    {
+      int32_t control_reg;
+      if (register_index >= 0) {
+        control_reg = (uint8_t)register_index;
+      } else {
+        control_reg = _control_reg;
+      }
+
+      if (control_reg == -1) {
+        return;
+      }
+
+      uint8_t *data = (uint8_t *)&value;
+
+      if (!isLittleEndian()) {
+        value = __bswap32(value);
+      }
+
+      uint8_t buf[4];
+      bytes = clamp<int>(bytes, 0, 3);
+      buf[0] = control_reg;
+      memcpy(&buf[1], data, bytes);
+
+      value = *(uint32_t *)buf;
+
+      if (isLittleEndian()) {
+        value = __bswap32(value);
+      }
+      canbus_output_value(_id | CANBUS_ID_WRITE_MODIFIER, value, bytes + 1);
+    }
 
   protected:
     void do_feedback(void);
+
+    int8_t _control_reg;
 };
 
 

@@ -1,4 +1,6 @@
-#ifdef RASPBERRY_PI_PICO
+#include <Beirdo-Utilities.h>
+
+// #ifdef RASPBERRY_PI_PICO
 
 #include <Arduino.h>
 #include <ArduinoLog.h>
@@ -107,4 +109,4 @@ void init_canbus_mcp2517fd(SPIClass *spi, int ss, int interrupt)
   canbus.begin(spi, ss, interrupt);  
 }
 
-#endif
+// #endif

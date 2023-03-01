@@ -1,7 +1,9 @@
 #ifndef __canbus_mcp2517fd_h_
 #define __canbus_mcp2517fd_h_
 
-#ifdef RASPBERRY_PI_PICO
+#include <Beirdo-Utilities.h>
+
+//`#ifdef RASPBERRY_PI_PICO
 
 #include <Arduino.h>
 #include <ACAN2517FD.h>
@@ -26,6 +28,6 @@ class CANBusController_MCP2517FD : public CANBusController {
 
 void init_canbus_mcp2517fd(SPIClass *spi, int ss, int interrupt);
 
-#endif
+// #endif
 
 #endif
