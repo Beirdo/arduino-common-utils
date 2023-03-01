@@ -28,10 +28,13 @@ typedef enum {
   CANBUS_ID_START_RUN,
 
   // Sensors on LINBus
-  CANBUS_ID_VEHICLE_FAN = 512,
+  CANBUS_ID_VEHICLE_FAN_SPEED = 512,
+  CANBUS_ID_VEHICLE_FAN_TEMP,
 } canbus_id_t;
 
 #define CANBUS_ID_WRITE_MODIFIER  BIT(10)
+#define CANBUS_ID_LINBUS_BASE     512
+#define CANBUS_ID_LINBUS_MASK     0x003F
 
 #define NAME_HELPER(x)    #x
 #define CANBUS_ID_NAME(x) NAME_HELPER(x)

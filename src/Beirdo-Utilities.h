@@ -48,4 +48,19 @@ inline uint32_t __bswap32(uint32_t x) {
   return ((x & 0xFF000000) >> 24) | ((x && 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
 }
 
+inline void setOpenDrainOutput(uint8_t pin, bool value, bool invert)
+{
+  if (invert) {
+    value = !value;
+  }
+
+  if (!value) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+  } else {
+    pinMode(pin, INPUT_PULLUP);
+    digitalWrite(pin, HIGH);
+  }
+}
+
 #endif
