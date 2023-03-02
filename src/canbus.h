@@ -1,10 +1,15 @@
 #ifndef __canbus_h_
 #define __canbus_h_
 
-#include <Arduino.h>
 #include <Beirdo-Utilities.h>
+#include <Arduino.h>
 
+#ifdef ARDUINO_ARCH_RP2040
 #include <SPI.h>
+#else
+class SPIClass;
+#endif
+
 #include <canbus_ids.h>
 
 typedef enum {
@@ -19,10 +24,10 @@ typedef enum {
 class CANBusController {
   public:
     CANBusController(int enable = -1) : _enable(enable), _initialized(false) {};
-    virtual bool begin(void);
-    virtual int write(int id, const char *buf, int len, uint8_t type = CAN_DATA);
-    virtual int read(int *id, const char *buf, int len, uint8_t *type);
-    virtual bool available(void);
+    bool begin(void) { return false; };
+    int write(int id, const char *buf, int len, uint8_t type) { return -1; };
+    int read(int *id, const char *buf, int len, uint8_t *type) { return -1; };
+    bool available(void) { return false; };
 
   protected:
     int _enable;

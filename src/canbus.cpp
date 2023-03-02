@@ -38,7 +38,7 @@ bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable, void *filte
   _initialized = false;
   _controller = 0;
 
-#ifdef RASPBERRY_PI_PICO
+#ifdef ARDUINO_ARCH_RP2040
   if (spi) {
     _controller = new CANBusController_MCP2517FD(spi, ss, interrupt);
   }

@@ -2,17 +2,17 @@
 #define __canbus_mcp2517fd_h_
 
 #include <Beirdo-Utilities.h>
-
-//`#ifdef RASPBERRY_PI_PICO
-
 #include <Arduino.h>
+
+#ifdef ARDUINO_ARCH_RP2040
+
 #include <ACAN2517FD.h>
 #include "canbus.h"
 
 class CANBusController_MCP2517FD : public CANBusController {
   public:
     CANBusController_MCP2517FD(SPIClass *spi, int ss, int interrupt) :
-      CANBusController(-1), _spican(0), _spi(spi), _ss(ss), _interrupt(interrupt) {};
+      CANBusController(), _spican(0), _spi(spi), _ss(ss), _interrupt(interrupt) {};
 
     bool begin(void);
     int write(int id, const char *buf, int len, uint8_t type = CANFD_WITH_BIT_RATE_SWITCH);
@@ -28,6 +28,6 @@ class CANBusController_MCP2517FD : public CANBusController {
 
 void init_canbus_mcp2517fd(SPIClass *spi, int ss, int interrupt);
 
-// #endif
+#endif
 
 #endif

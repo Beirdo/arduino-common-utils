@@ -63,4 +63,10 @@ inline void setOpenDrainOutput(uint8_t pin, bool value, bool invert)
   }
 }
 
+#ifdef ARDUINO_ARCH_RP2040
+#define USE_SPI
+#define USE_MUTEX
+#define USE_I2C
+#endif
+
 #endif

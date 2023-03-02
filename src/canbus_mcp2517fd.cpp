@@ -1,14 +1,18 @@
 #include <Beirdo-Utilities.h>
-
-// #ifdef RASPBERRY_PI_PICO
-
 #include <Arduino.h>
+
+#ifdef ARDUINO_ARCH_RP2040
+
 #include <ArduinoLog.h>
 #include <ACAN2517FD.h>
 #include <SPI.h>
 
 #include "canbus.h"
 #include "canbus_mcp2517fd.h"
+
+#ifdef USE_MUTEX
+extern mutex_t canbus_mutex;
+#endif
 
 ACAN2517FD *controller = 0;
 
@@ -109,4 +113,4 @@ void init_canbus_mcp2517fd(SPIClass *spi, int ss, int interrupt)
   canbus.begin(spi, ss, interrupt);  
 }
 
-// #endif
+#endif

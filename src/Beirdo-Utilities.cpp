@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
+#include <Beirdo-Utilities.h>
 
 #ifndef DISABLE_LOGGING
 
@@ -43,7 +44,7 @@ void sendCoreNum(Print *output, int level)
   mutex_enter_blocking(&log_mutex);
 #endif
 
-#ifdef RASPBERRY_PI_PICO
+#ifdef ARDUINO_ARCH_RP2040
   int coreNum = get_core_num();
 #else
   int coreNum = 0;
