@@ -35,7 +35,7 @@ typedef enum {
 
 #define CANBUS_ID_WRITE_MODIFIER  BIT(10)
 #define CANBUS_ID_LINBUS_BASE     512
-#define CANBUS_ID_LINBUS_MASK     0x003F
+#define CANBUS_ID_LINBUS_MASK     0x01FF
 
 #define NAME_HELPER(x)    #x
 #define CANBUS_ID_NAME(x) NAME_HELPER(x)
