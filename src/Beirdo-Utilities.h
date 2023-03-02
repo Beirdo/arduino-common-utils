@@ -41,7 +41,7 @@ inline T map(T x, T in_min, T in_max, T out_min, T out_max, bool do_clamp = true
 inline bool isLittleEndian(void) {
   uint32_t i = 1;
   uint8_t c = *(uint8_t *)&i;
-  return i == 1;
+  return c == 1;
 }
 
 inline uint32_t __bswap32(uint32_t x) {
