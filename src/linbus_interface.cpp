@@ -29,6 +29,13 @@ void init_linbus(int sleepPin, int wakePin, int ledPin)
   registers[regLocation].write(location);
 
   linbus_address &= 0x1F;
+
+  pinMode(sleepPin, OUTPUT);
+  digitalWrite(sleepPin, LOW);
+
+  pinMode(wakePin, OUTPUT);
+  digitalWrite(wakePin, LOW);
+
   linbus.begin(wakePin, sleepPin, linbus_address);
 }
 
