@@ -2,7 +2,9 @@
 
 #ifdef STM32F0xx
 
+#ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>
+#endif
 #include <STM32-CAN.h>
 #include <stdlib.h>
 
@@ -15,7 +17,9 @@ bool CANBusController_STM32::begin(void)
   _can.setFilters(_filters, _filter_count);
   _can.begin(CAN_1000KBPS);
 
+#ifndef DISABLE_LOGGING
   Log.notice("Initialized CANBus on STM32");
+#endif
   _initialized = true;
 
   if (_enable != -1) {

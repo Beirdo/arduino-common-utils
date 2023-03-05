@@ -3,10 +3,6 @@
 
 #include <Arduino.h>
 
-#if __has_include("beirdo_config.h")
-#include "beirdo_config.h"
-#endif
-
 #define HI_BYTE(x)    ((uint8_t)(((int)(x) >> 8) & 0xFF))
 #define LO_BYTE(x)    ((uint8_t)(((int)(x) & 0xFF)))
 

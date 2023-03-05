@@ -1,6 +1,8 @@
 #ifndef SKIP_CANBUS
 #include <Arduino.h>
+#ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>
+#endif
 #include <stdlib.h>
 #include <cppQueue.h>
 #include <Beirdo-Utilities.h>
@@ -105,11 +107,15 @@ void update_canbus_tx(void)
     uint8_t type = item->type;
 
     int retlen = canbus.write(id, (const char *)buf, len, type);
+#ifndef DISABLE_LOGGING
     Log.notice("CANBus ID %X, type %d: Sent %d bytes of %d", id, type, retlen, len);
 
 #ifdef HEXDUMP_TX
     hexdump(buf, retlen, 16);
 #endif    
+
+#endif
+
   }
 }
 
@@ -124,10 +130,13 @@ void update_canbus_rx(void)
       continue;
     }
 
+#ifndef DISABLE_LOGGING
     Log.notice("CANBus ID %X, type %d: Received %d bytes", id, type, len);
 
 #ifdef HEXDUMP_TX
     hexdump(canbus_rx_buf, len, 16);
+#endif
+
 #endif
 
     canbus_dispatch(id, canbus_rx_buf, len, type);
