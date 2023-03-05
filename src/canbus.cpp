@@ -1,3 +1,4 @@
+#ifndef SKIP_CANBUS
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include <stdlib.h>
@@ -169,3 +170,5 @@ void canbus_request_value(int id)
 {
   canbus_send(id, 0, 0, CAN_REMOTE);
 }
+
+#endif

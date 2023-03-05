@@ -1,7 +1,7 @@
 #ifndef __linbus_interface_h_
 #define __linbus_interface_h_
 
-#ifdef INCLUDE LINBUS
+#ifdef INCLUDE_LINBUS
 
 #include <Arduino.h>
 #include <LINBus_stack.h>

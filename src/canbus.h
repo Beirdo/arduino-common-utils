@@ -1,6 +1,8 @@
 #ifndef __canbus_h_
 #define __canbus_h_
 
+#ifndef SKIP_CANBUS
+
 #include <Beirdo-Utilities.h>
 #include <Arduino.h>
 
@@ -61,5 +63,7 @@ void canbus_request_value(int id);
 
 
 extern CANBus canbus;
+
+#endif
 
 #endif

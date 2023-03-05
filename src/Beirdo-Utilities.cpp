@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <ArduinoLog.h>
 #include <Beirdo-Utilities.h>
 
 #ifndef DISABLE_LOGGING
+#include <ArduinoLog.h>
 
 #ifdef USE_MUTEX
 mutex_t log_mutex;
