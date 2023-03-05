@@ -1,6 +1,8 @@
 #ifndef __linbus_interface_h_
 #define __linbus_interface_h_
 
+#ifdef INCLUDE LINBUS
+
 #include <Arduino.h>
 #include <LINBus_stack.h>
 #include <linbus_registers.h>
@@ -16,5 +18,7 @@ void init_linbus(int sleepPin, int wakePin, int ledPin);
 void update_linbus(void);
 void process_linbus(void);
 void dispatch_linbus(uint8_t index, uint8_t value);
+
+#endif
 
 #endif

@@ -1,3 +1,5 @@
+#ifdef INCLUDE_LINBUS
+
 #include <Arduino.h>
 #include <LINBus_stack.h>
 #include <EEPROM.h>
@@ -77,3 +79,5 @@ void process_linbus(void)
     linbus.sleep(STATE_SLEEP);
   }  
 }
+
+#endif
