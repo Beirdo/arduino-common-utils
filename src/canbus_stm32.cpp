@@ -67,6 +67,8 @@ int CANBusController_STM32::read(int *id, const char *buf, int len, uint8_t *typ
   memcpy((char *)buf, msg.data, msg.len);
   *id = msg.id;
   *type = (msg.type == REMOTE_FRAME ? CAN_REMOTE : CAN_DATA);
+
+  return msg.len;
 }
 
 bool CANBusController_STM32::available(void)
