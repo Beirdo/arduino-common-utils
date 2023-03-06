@@ -9,8 +9,7 @@
 // IDs for the sensors to broadcast reading updates.
 
 typedef enum {
-  CANBUS_ID_MAINBOARD = 1,
-  CANBUS_ID_WBUS,
+  CANBUS_ID_WBUS = 1,
   CANBUS_ID_LINBUS_BRIDGE,
 
   CANBUS_ID_FSM_STATE,
