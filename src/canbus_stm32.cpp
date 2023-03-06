@@ -15,7 +15,11 @@
 bool CANBusController_STM32::begin(void)
 {
   _can.setFilters(_filters, _filter_count);
-  _can.begin(CAN_1000KBPS);
+  HardwareSerial *serial = &Serial2;
+#ifdef DISABLE_LOGGING
+  serial = 0;
+#endif
+  _can.begin(serial, CAN_1000KBPS);
 
 #ifndef DISABLE_LOGGING
   Log.notice("Initialized CANBus on STM32");
