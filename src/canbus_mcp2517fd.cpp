@@ -1,7 +1,7 @@
 #include <Beirdo-Utilities.h>
 #include <Arduino.h>
 
-#ifdef ARDUINO_ARCH_RP2040
+#ifdef USE_MCP2517FD
 
 #include <ArduinoLog.h>
 #include <ACAN2517FD.h>

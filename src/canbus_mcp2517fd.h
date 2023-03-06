@@ -1,11 +1,11 @@
 #ifndef __canbus_mcp2517fd_h_
 #define __canbus_mcp2517fd_h_
 
-#include <Beirdo-Utilities.h>
 #include <Arduino.h>
 
-#ifdef ARDUINO_ARCH_RP2040
+#ifdef USE_MCP2517FD
 
+#include <Beirdo-Utilities.h>
 #include <ACAN2517FD.h>
 #include "canbus.h"
 

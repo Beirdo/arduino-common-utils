@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#ifdef STM32F0xx
+#ifdef USE_STM32_CAN
 
 #ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>

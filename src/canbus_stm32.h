@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#ifdef STM32F0xx
+#ifdef USE_STM32_CAN
 
 #include <STM32-CAN.h>
 #include "canbus.h"

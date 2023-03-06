@@ -41,13 +41,13 @@ bool CANBus::begin(SPIClass *spi, int ss, int interrupt, int enable, void *filte
   _initialized = false;
   _controller = 0;
 
-#ifdef ARDUINO_ARCH_RP2040
+#ifdef USE_MCP2517FD
   if (spi) {
     _controller = new CANBusController_MCP2517FD(spi, ss, interrupt);
   }
 #endif
 
-#ifdef STM32F0xx
+#ifdef USE_STM32_CAN
   _controller = new CANBusController_STM32(enable, filters, filter_count);
 #endif
 
