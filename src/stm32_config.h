@@ -3,7 +3,9 @@
 
 #ifdef STM32F0xx
 
+#if __has_include("hal_conf_extra.h")
 #include "hal_conf_extra.h"
+#endif
 
 #ifdef HAL_I2C_MODULE_DISABLED
 #undef USE_I2C
