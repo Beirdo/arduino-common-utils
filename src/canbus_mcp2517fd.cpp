@@ -3,7 +3,10 @@
 
 #ifdef USE_MCP2517FD
 
+#ifndef DISABLE_LOGGING
 #include <ArduinoLog.h>
+#endif
+
 #include <ACAN2517FD.h>
 #include <SPI.h>
 
@@ -32,10 +35,14 @@ bool CANBusController_MCP2517FD::begin(void)
                                1000 * 1000, DataBitRateFactor::x8);
   const uint32_t errorCode = _spican->begin(settings, mcp2517fd_isr) ;  
   if (errorCode) {
+#ifndef DISABLE_LOGGING
     Log.error("CAN Initialization error code: %X", errorCode);
+#endif
     _initialized = false;
   } else {
+#ifndef DISABLE_LOGGING
     Log.notice("Initialized CANBus on MCP2517");
+#endif
     _initialized = true;
   }
 
