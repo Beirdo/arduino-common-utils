@@ -3,6 +3,10 @@
 
 #include <Arduino.h>
 
+#ifdef STM32F0xx
+#include "stm32_config.h"
+#endif
+
 #define HI_BYTE(x)    ((uint8_t)(((int)(x) >> 8) & 0xFF))
 #define LO_BYTE(x)    ((uint8_t)(((int)(x) & 0xFF)))
 
