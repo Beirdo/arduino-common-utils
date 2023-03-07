@@ -281,7 +281,7 @@ class RemoteSensor : public Sensor {
     virtual void do_feedback(void) = 0;
 };
 
-
+#ifndef SKIP_CANBUS
 class RemoteCANBusSensor : public RemoteSensor {
   public:
     RemoteCANBusSensor(int id, int data_bytes, int32_t feedback_thresh) : 
@@ -301,7 +301,6 @@ class RemoteCANBusSensor : public RemoteSensor {
   protected:
     void do_feedback(void);
 };
-
 
 class RemoteLINBusSensor : public RemoteSensor {
   public:
@@ -350,6 +349,6 @@ class RemoteLINBusSensor : public RemoteSensor {
 
     int8_t _control_reg;
 };
-
+#endif
 
 #endif
